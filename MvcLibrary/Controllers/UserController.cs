@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -23,15 +25,29 @@ namespace MvcLibrary.Controllers
 
         public override void OnActionExecuting(ActionExecutingContext context)
         {
+            var userLogin = HttpContext.Session.GetString("UserLogin");
             var isAdmin = HttpContext.Session.GetString("IsAdmin");
-            if (string.IsNullOrEmpty(isAdmin) || isAdmin != "True")
+            var action = context.RouteData.Values["action"]?.ToString()?.ToLower();
+
+            // Allow ChangePassword for any logged-in user
+            if (action == "changepassword")
             {
-                context.Result = RedirectToAction("Index", "Login");
+                if (string.IsNullOrEmpty(userLogin))
+                {
+                    context.Result = RedirectToAction("Index", "Login");
+                }
             }
+            else
+            {
+                if (string.IsNullOrEmpty(isAdmin) || isAdmin != "True")
+                {
+                    context.Result = RedirectToAction("Index", "Login");
+                }
+            }
+
             base.OnActionExecuting(context);
         }
 
-        // GET: User
         public async Task<IActionResult> Index()
         {
             return _context.Users != null ?
@@ -39,7 +55,6 @@ namespace MvcLibrary.Controllers
                         Problem("Entity set 'LibraryDbContext.Users'  is null.");
         }
 
-        // GET: User/Details/5
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null || _context.Users == null)
@@ -52,27 +67,37 @@ namespace MvcLibrary.Controllers
             return View(user);
         }
 
-        // GET: User/Create
         public IActionResult Create()
         {
             return View();
         }
 
-        // POST: User/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Login,PasswordHash,Token,IsAdmin")] User user)
+        public async Task<IActionResult> Create(string Login, string Password, string FirstName, string LastName, bool IsAdmin)
         {
-            if (ModelState.IsValid)
+            if (string.IsNullOrWhiteSpace(Login) || string.IsNullOrWhiteSpace(Password))
             {
-                _context.Add(user);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+                ModelState.AddModelError("", "Login and Password are required.");
+                return View();
             }
-            return View(user);
+
+            string hash = ComputeSha256Hash(Password);
+
+            var user = new User
+            {
+                Login = Login,
+                PasswordHash = hash,
+                FirstName = FirstName,
+                LastName = LastName,
+                IsAdmin = IsAdmin
+            };
+
+            _context.Add(user);
+            await _context.SaveChangesAsync();
+            return RedirectToAction(nameof(Index));
         }
 
-        // GET: User/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null || _context.Users == null)
@@ -85,34 +110,39 @@ namespace MvcLibrary.Controllers
             return View(user);
         }
 
-        // POST: User/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Login,PasswordHash,Token,IsAdmin")] User user)
+        public async Task<IActionResult> Edit(int id, [Bind("Id,Login,FirstName,LastName,IsAdmin")] User formUser)
         {
-            if (id != user.Id)
+            if (id != formUser.Id)
                 return NotFound();
 
             if (ModelState.IsValid)
             {
                 try
                 {
-                    _context.Update(user);
+                    var dbUser = await _context.Users.FindAsync(id);
+                    if (dbUser == null) return NotFound();
+
+                    dbUser.Login = formUser.Login;
+                    dbUser.FirstName = formUser.FirstName;
+                    dbUser.LastName = formUser.LastName;
+                    dbUser.IsAdmin = formUser.IsAdmin;
+
                     await _context.SaveChangesAsync();
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!UserExists(user.Id))
+                    if (!UserExists(formUser.Id))
                         return NotFound();
                     else
                         throw;
                 }
                 return RedirectToAction(nameof(Index));
             }
-            return View(user);
+            return View(formUser);
         }
 
-        // GET: User/Delete/5
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null || _context.Users == null)
@@ -125,13 +155,12 @@ namespace MvcLibrary.Controllers
             return View(user);
         }
 
-        // POST: User/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             if (_context.Users == null)
-                return Problem("Entity set 'LibraryDbContext.Users'  is null.");
+                return Problem("Entity set 'LibraryDbContext.Users' is null.");
 
             var user = await _context.Users.FindAsync(id);
             if (user != null)
@@ -141,9 +170,56 @@ namespace MvcLibrary.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        public IActionResult ChangePassword()
+        {
+            return View();
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ChangePassword(string OldPassword, string NewPassword, string ConfirmPassword)
+        {
+            var login = HttpContext.Session.GetString("UserLogin");
+            if (login == null) return RedirectToAction("Index", "Login");
+
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Login == login);
+            if (user == null) return NotFound();
+
+            string oldHash = ComputeSha256Hash(OldPassword);
+            if (user.PasswordHash != oldHash)
+            {
+                ModelState.AddModelError("", "Incorrect current password.");
+                return View();
+            }
+
+            if (NewPassword != ConfirmPassword)
+            {
+                ModelState.AddModelError("", "New passwords do not match.");
+                return View();
+            }
+
+            user.PasswordHash = ComputeSha256Hash(NewPassword);
+            await _context.SaveChangesAsync();
+
+            TempData["Message"] = "Password changed successfully.";
+            return RedirectToAction("Index");
+        }
+
         private bool UserExists(int id)
         {
             return (_context.Users?.Any(e => e.Id == id)).GetValueOrDefault();
+        }
+
+        private string ComputeSha256Hash(string rawData)
+        {
+            using (SHA256 sha256 = SHA256.Create())
+            {
+                byte[] bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(rawData));
+                StringBuilder builder = new StringBuilder();
+                foreach (byte b in bytes)
+                    builder.Append(b.ToString("x2"));
+                return builder.ToString();
+            }
         }
     }
 }

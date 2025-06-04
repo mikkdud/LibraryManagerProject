@@ -9,14 +9,16 @@ public class User
 
     [Required]
     [Display(Name = "Login")]
-    public string Login { get; set; } = null!; // wycisza warning kompilatora
+    public string Login { get; set; } = null!;
 
-    [Required]
-    [Display(Name = "Password hash")]
-    public string PasswordHash { get; set; } = null!; 
+    [ScaffoldColumn(false)] // ukrywa pole w formularzach i walidacji edycji
+    public string? PasswordHash { get; set; }
 
-    [Display(Name = "API token")]
-    public string Token { get; set; } = "";
+    [Display(Name = "First name")]
+    public string FirstName { get; set; } = string.Empty;
+
+    [Display(Name = "Last name")]
+    public string LastName { get; set; } = string.Empty;
 
     [Display(Name = "Is administrator")]
     public bool IsAdmin { get; set; }

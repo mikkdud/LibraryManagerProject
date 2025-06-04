@@ -35,7 +35,8 @@ using (var scope = app.Services.CreateScope())
             Login = "admin",
             PasswordHash = hash,
             IsAdmin = true,
-            Token = Guid.NewGuid().ToString()
+            FirstName = "Admin",
+            LastName = "Account"
         });
 
         db.SaveChanges();
