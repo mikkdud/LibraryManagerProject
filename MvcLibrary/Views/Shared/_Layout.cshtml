@@ -35,11 +35,21 @@
                             <a class="nav-link text-dark" asp-controller="User" asp-action="Index">Users</a>
                         </li>
                     </ul>
-
                 </div>
             </div>
         </nav>
     </header>
+
+    @if (Context.Session.GetString("UserLogin") != null)
+    {
+        <div class="d-flex justify-content-end align-items-center p-2 bg-light border-bottom mb-3" style="font-size: 0.95rem;">
+            <span class="me-3">Zalogowany jako: <strong>@Context.Session.GetString("UserLogin")</strong></span>
+            <form asp-controller="Login" asp-action="Logout" method="post" class="mb-0">
+                <button type="submit" class="btn btn-outline-secondary btn-sm">Wyloguj</button>
+            </form>
+        </div>
+    }
+
     <div class="container">
         <main role="main" class="pb-3">
             @RenderBody()
