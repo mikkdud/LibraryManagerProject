@@ -20,12 +20,13 @@ namespace MvcLibrary.Controllers
         }
 
         // GET: Volume
-        public async Task<IActionResult> Index()
-        {
-              return _context.Volumes != null ? 
-                          View(await _context.Volumes.ToListAsync()) :
-                          Problem("Entity set 'LibraryDbContext.Volumes'  is null.");
-        }
+public async Task<IActionResult> Index()
+{
+    return _context.Volumes != null ? 
+        View(await _context.Volumes.Include(v => v.Book).ToListAsync()) :
+        Problem("Entity set 'LibraryDbContext.Volumes' is null.");
+}
+
 
         // GET: Volume/Details/5
         public async Task<IActionResult> Details(int? id)
@@ -48,6 +49,7 @@ namespace MvcLibrary.Controllers
         // GET: Volume/Create
         public IActionResult Create()
         {
+            ViewData["BookId"] = new SelectList(_context.Books, "Id", "Title");
             return View();
         }
 
@@ -56,7 +58,7 @@ namespace MvcLibrary.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,InventoryNumber,IsAvailable")] Volume volume)
+        public async Task<IActionResult> Create([Bind("Id,InventoryNumber,IsAvailable,BookId")] Volume volume)
         {
             if (ModelState.IsValid)
             {
@@ -64,6 +66,7 @@ namespace MvcLibrary.Controllers
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
+            ViewData["BookId"] = new SelectList(_context.Books, "Id", "Title", volume.BookId);
             return View(volume);
         }
 

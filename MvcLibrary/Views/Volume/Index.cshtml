@@ -12,24 +12,18 @@
 <table class="table">
     <thead>
         <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.InventoryNumber)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.IsAvailable)
-            </th>
+            <th>@Html.DisplayNameFor(model => model.InventoryNumber)</th>
+            <th>@Html.DisplayNameFor(model => model.IsAvailable)</th>
+            <th>@Html.DisplayName("Book Title")</th>
             <th></th>
         </tr>
     </thead>
     <tbody>
 @foreach (var item in Model) {
         <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.InventoryNumber)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.IsAvailable)
-            </td>
+            <td>@Html.DisplayFor(modelItem => item.InventoryNumber)</td>
+            <td>@Html.DisplayFor(modelItem => item.IsAvailable)</td>
+            <td>@item.Book?.Title</td>
             <td>
                 <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
                 <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
@@ -39,3 +33,4 @@
 }
     </tbody>
 </table>
+
