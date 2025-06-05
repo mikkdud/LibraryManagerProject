@@ -7,11 +7,13 @@ public class Borrowing
     [Key]
     public int Id { get; set; }
 
-    [Display(Name = "User")]
-    public required User User { get; set; }
+    [Required]
+    public int UserId { get; set; }
+    public User User { get; set; } = null!;
 
-    [Display(Name = "Volume")]
-    public required Volume Volume { get; set; }
+    [Required]
+    public int VolumeId { get; set; }
+    public Volume Volume { get; set; } = null!;
 
     [Display(Name = "Borrowed at")]
     [DataType(DataType.Date)]

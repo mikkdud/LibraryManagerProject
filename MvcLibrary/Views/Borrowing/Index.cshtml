@@ -1,35 +1,35 @@
 @model IEnumerable<MvcLibrary.Models.Borrowing>
 
 @{
-    ViewData["Title"] = "Index";
+    ViewData["Title"] = "Borrowings";
 }
 
-<h1>Index</h1>
+<h1>Borrowings</h1>
 
 <p>
-    <a asp-action="Create">Create New</a>
+    <a asp-action="Create" class="btn btn-primary">New Borrowing</a>
 </p>
-<table class="table">
+
+<table class="table table-bordered table-striped">
     <thead>
         <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.BorrowedAt)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.ReturnedAt)
-            </th>
+            <th>User</th>
+            <th>Book</th>
+            <th>Inventory #</th>
+            <th>Borrowed At</th>
+            <th>Returned At</th>
             <th></th>
         </tr>
     </thead>
     <tbody>
-@foreach (var item in Model) {
+@foreach (var item in Model)
+{
         <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.BorrowedAt)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.ReturnedAt)
-            </td>
+            <td>@item.User!.Login</td>
+            <td>@item.Volume!.Book!.Title</td>
+            <td>@item.Volume!.InventoryNumber</td>
+            <td>@item.BorrowedAt.ToString("yyyy-MM-dd")</td>
+            <td>@(item.ReturnedAt?.ToString("yyyy-MM-dd") ?? "-")</td>
             <td>
                 <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
                 <a asp-action="Details" asp-route-id="@item.Id">Details</a> |

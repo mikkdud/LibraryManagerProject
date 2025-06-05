@@ -1,30 +1,26 @@
 @model MvcLibrary.Models.Borrowing
 
 @{
-    ViewData["Title"] = "Details";
+    ViewData["Title"] = "Borrowing Details";
 }
 
-<h1>Details</h1>
+<h1>Borrowing Details</h1>
+<hr />
+<dl class="row">
+    <dt class="col-sm-3">User</dt>
+    <dd class="col-sm-9">@Model.User?.Login</dd>
 
-<div>
-    <h4>Borrowing</h4>
-    <hr />
-    <dl class="row">
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.BorrowedAt)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.BorrowedAt)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.ReturnedAt)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.ReturnedAt)
-        </dd>
-    </dl>
-</div>
-<div>
-    <a asp-action="Edit" asp-route-id="@Model?.Id">Edit</a> |
-    <a asp-action="Index">Back to List</a>
-</div>
+    <dt class="col-sm-3">Book</dt>
+    <dd class="col-sm-9">@Model.Volume?.Book?.Title</dd>
+
+    <dt class="col-sm-3">Inventory #</dt>
+    <dd class="col-sm-9">@Model.Volume?.InventoryNumber</dd>
+
+    <dt class="col-sm-3">Borrowed At</dt>
+    <dd class="col-sm-9">@Model.BorrowedAt.ToString("yyyy-MM-dd")</dd>
+
+    <dt class="col-sm-3">Returned At</dt>
+    <dd class="col-sm-9">@Model.ReturnedAt?.ToString("yyyy-MM-dd") ?? "-"</dd>
+</dl>
+
+<a asp-action="Index" class="btn btn-secondary">Back to List</a>

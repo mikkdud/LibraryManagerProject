@@ -1,38 +1,25 @@
 @model MvcLibrary.Models.Borrowing
 
 @{
-    ViewData["Title"] = "Edit";
+    ViewData["Title"] = "Edit Borrowing";
 }
 
-<h1>Edit</h1>
-
-<h4>Borrowing</h4>
+<h1>Edit Borrowing</h1>
 <hr />
-<div class="row">
-    <div class="col-md-4">
-        <form asp-action="Edit">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <input type="hidden" asp-for="Id" />
-            <div class="form-group">
-                <label asp-for="BorrowedAt" class="control-label"></label>
-                <input asp-for="BorrowedAt" class="form-control" />
-                <span asp-validation-for="BorrowedAt" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="ReturnedAt" class="control-label"></label>
-                <input asp-for="ReturnedAt" class="form-control" />
-                <span asp-validation-for="ReturnedAt" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <input type="submit" value="Save" class="btn btn-primary" />
-            </div>
-        </form>
-    </div>
-</div>
+<form asp-action="Edit">
+    <input type="hidden" asp-for="Id" />
 
-<div>
-    <a asp-action="Index">Back to List</a>
-</div>
+    <div class="form-group">
+        <label asp-for="ReturnedAt" class="control-label">Returned At</label>
+        <input asp-for="ReturnedAt" class="form-control" type="date" />
+        <span asp-validation-for="ReturnedAt" class="text-danger"></span>
+    </div>
+
+    <div class="form-group mt-3">
+        <input type="submit" value="Save" class="btn btn-primary" />
+        <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+    </div>
+</form>
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}

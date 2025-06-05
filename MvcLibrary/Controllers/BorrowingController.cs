@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
@@ -23,121 +22,145 @@ namespace MvcLibrary.Controllers
 
         public override void OnActionExecuting(ActionExecutingContext context)
         {
-            var isAdmin = HttpContext.Session.GetString("IsAdmin");
-            if (string.IsNullOrEmpty(isAdmin) || isAdmin != "True")
+            var isLoggedIn = HttpContext.Session.GetString("UserLogin");
+            if (string.IsNullOrEmpty(isLoggedIn))
             {
                 context.Result = RedirectToAction("Index", "Login");
             }
             base.OnActionExecuting(context);
         }
 
-        // GET: Borrowing
         public async Task<IActionResult> Index()
         {
-            return _context.Borrowings != null ?
-                        View(await _context.Borrowings.ToListAsync()) :
-                        Problem("Entity set 'LibraryDbContext.Borrowings' is null.");
+            var borrowings = await _context.Borrowings
+                .Include(b => b.User)
+                .Include(b => b.Volume)
+                    .ThenInclude(v => v.Book)
+                .ToListAsync();
+
+            return View(borrowings);
         }
 
-        // GET: Borrowing/Details/5
-        public async Task<IActionResult> Details(int? id)
-        {
-            if (id == null || _context.Borrowings == null)
-                return NotFound();
-
-            var borrowing = await _context.Borrowings.FirstOrDefaultAsync(m => m.Id == id);
-            if (borrowing == null)
-                return NotFound();
-
-            return View(borrowing);
-        }
-
-        // GET: Borrowing/Create
         public IActionResult Create()
         {
+            var availableVolumes = _context.Volumes
+                .Include(v => v.Book)
+                .Where(v => v.IsAvailable)
+                .ToList();
+
+            ViewData["VolumeId"] = new SelectList(availableVolumes, "Id", "InventoryNumber");
+
+            var isAdmin = HttpContext.Session.GetString("IsAdmin");
+            if (isAdmin == "True")
+            {
+                ViewData["UserId"] = new SelectList(_context.Users.ToList(), "Id", "Login");
+            }
+
             return View();
         }
 
-        // POST: Borrowing/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,BorrowedAt,ReturnedAt")] Borrowing borrowing)
+        public async Task<IActionResult> Create(int VolumeId, DateTime BorrowedAt, int? UserId)
         {
-            if (ModelState.IsValid)
+            var login = HttpContext.Session.GetString("UserLogin");
+            if (string.IsNullOrEmpty(login)) return RedirectToAction("Index", "Login");
+
+            var currentUser = await _context.Users.FirstOrDefaultAsync(u => u.Login == login);
+            if (currentUser == null) return NotFound();
+
+            int targetUserId = UserId ?? currentUser.Id;
+
+            var volume = await _context.Volumes.FindAsync(VolumeId);
+            if (volume == null || !volume.IsAvailable) return BadRequest("Volume is not available.");
+
+            var borrowing = new Borrowing
             {
-                _context.Add(borrowing);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
-            }
-            return View(borrowing);
+                UserId = targetUserId,
+                VolumeId = VolumeId,
+                BorrowedAt = BorrowedAt
+            };
+
+            volume.IsAvailable = false;
+
+            _context.Borrowings.Add(borrowing);
+            _context.Volumes.Update(volume);
+            await _context.SaveChangesAsync();
+
+            return RedirectToAction(nameof(Index));
         }
 
-        // GET: Borrowing/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
-            if (id == null || _context.Borrowings == null)
-                return NotFound();
+            if (id == null) return NotFound();
 
             var borrowing = await _context.Borrowings.FindAsync(id);
-            if (borrowing == null)
-                return NotFound();
+            if (borrowing == null) return NotFound();
 
             return View(borrowing);
         }
 
-        // POST: Borrowing/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,BorrowedAt,ReturnedAt")] Borrowing borrowing)
+        public async Task<IActionResult> Edit(int id, [Bind("Id,ReturnedAt")] Borrowing borrowing)
         {
-            if (id != borrowing.Id)
-                return NotFound();
+            if (id != borrowing.Id) return NotFound();
 
-            if (ModelState.IsValid)
-            {
-                try
-                {
-                    _context.Update(borrowing);
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!BorrowingExists(borrowing.Id))
-                        return NotFound();
-                    else
-                        throw;
-                }
-                return RedirectToAction(nameof(Index));
-            }
+            var existing = await _context.Borrowings.FindAsync(id);
+            if (existing == null) return NotFound();
+
+            existing.ReturnedAt = borrowing.ReturnedAt;
+            await _context.SaveChangesAsync();
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        public async Task<IActionResult> Details(int? id)
+        {
+            if (id == null) return NotFound();
+
+            var borrowing = await _context.Borrowings
+                .Include(b => b.User)
+                .Include(b => b.Volume)
+                    .ThenInclude(v => v.Book)
+                .FirstOrDefaultAsync(m => m.Id == id);
+
+            if (borrowing == null) return NotFound();
+
             return View(borrowing);
         }
 
-        // GET: Borrowing/Delete/5
         public async Task<IActionResult> Delete(int? id)
         {
-            if (id == null || _context.Borrowings == null)
-                return NotFound();
+            if (id == null) return NotFound();
 
-            var borrowing = await _context.Borrowings.FirstOrDefaultAsync(m => m.Id == id);
-            if (borrowing == null)
-                return NotFound();
+            var borrowing = await _context.Borrowings
+                .Include(b => b.User)
+                .Include(b => b.Volume)
+                    .ThenInclude(v => v.Book)
+                .FirstOrDefaultAsync(m => m.Id == id);
+
+            if (borrowing == null) return NotFound();
 
             return View(borrowing);
         }
 
-        // POST: Borrowing/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            if (_context.Borrowings == null)
-                return Problem("Entity set 'LibraryDbContext.Borrowings' is null.");
+            var borrowing = await _context.Borrowings
+                .Include(b => b.Volume)
+                .FirstOrDefaultAsync(b => b.Id == id);
 
-            var borrowing = await _context.Borrowings.FindAsync(id);
             if (borrowing != null)
+            {
+                borrowing.Volume.IsAvailable = true;
+                _context.Volumes.Update(borrowing.Volume);
                 _context.Borrowings.Remove(borrowing);
+                await _context.SaveChangesAsync();
+            }
 
-            await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 
