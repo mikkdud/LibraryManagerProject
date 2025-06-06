@@ -1,0 +1,34 @@
+@{
+    ViewData["Title"] = "Statistics Report";
+    var topBooks = ViewData["TopBooks"] as IEnumerable<dynamic>;
+}
+
+<h1>Library Report</h1>
+
+<hr />
+
+<h4>General statistics</h4>
+<ul>
+    <li><strong>Total borrowings:</strong> @ViewData["TotalBorrowings"]</li>
+    <li><strong>Active borrowings:</strong> @ViewData["ActiveBorrowings"]</li>
+    <li><strong>Users with active borrowings:</strong> @ViewData["ActiveUsers"]</li>
+</ul>
+
+<h4 class="mt-4">Top 5 most borrowed books</h4>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Title</th>
+            <th>Times Borrowed</th>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach (var book in topBooks)
+    {
+        <tr>
+            <td>@book.Title</td>
+            <td>@book.Count</td>
+        </tr>
+    }
+    </tbody>
+</table>
