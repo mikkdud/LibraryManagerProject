@@ -54,6 +54,9 @@ Aplikacja służy do zarządzania biblioteką – umożliwia dodawanie książek
 - **Volumes**: `Id`, `InventoryNumber`, `IsAvailable`, `BookId`
 - **Borrowings**: `Id`, `UserId`, `VolumeId`, `BorrowedAt`, `ReturnedAt`
 
+
+![Database Schema](schema.png)
+
   
 
 ---
